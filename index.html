@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+  
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css"> 
+</head>
+<body>
+</body>
+</html>
+
+<script>
+    $(document).ready(function () {
+        
+        var playAudio = document.createElement('button');
+        playAudio.innerHTML="Play Audio";
+        playAudio.setAttribute('id', 'playAudio');
+        document.body.append(playAudio);
+
+        var Download = document.createElement('button');
+        Download.innerHTML="Download";
+        Download.setAttribute('id', 'download');
+        document.body.append(Download);
+
+        var input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('id', 'upload');
+        document.body.append(input);
+
+      
+        
+
+        playAudio.addEventListener('click',function(){
+            if(document.getElementById('audio')){
+                document.getElementById('audio').play();
+            }
+        });
+
+        Download.addEventListener("click",function(){
+  if(document.getElementById('audio')){
+    const a=Object.assign(document.createElement('a'),{href:document.getElementById('audio').src,download:"newAudio.mp3"});
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+   
+  }
+})
+
+        document.getElementById("upload").addEventListener("change", function (event) {
+
+            if (document.getElementById("minimum_span_label")) {
+                document.getElementById("minimum_span_label").remove();
+                document.getElementById("maximum_span_label").remove();
+                document.getElementById("price_range").remove();
+                document.getElementById("audio1").remove();
+                document.getElementById("submit").remove();
+                if(document.getElementById('audio')){
+                document.getElementById('audio').remove();
+                document.getElementById('audiolabel').remove();
+                }
+            }
+
+            var audio = document.createElement('audio');
+            audio.setAttribute("id", "audio1");
+            function insertAfter(newNode, referenceNode) {
+                referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+            };
+
+            insertAfter(audio, document.getElementById("upload"));
+            audio.setAttribute("src", URL.createObjectURL(event.target.files[0]));
+            var audioSource = URL.createObjectURL(event.target.files[0]);
+            audio.setAttribute("controls", true);
+            audio.style.display = "flex";
+            audio.load();
+
+            var label1 = document.createElement('label');
+            label1.setAttribute("id", 'minimum_span_label');
+            insertAfter(label1, document.querySelector('audio'));
+            var label2 = document.createElement('label');
+            label2.setAttribute("id", 'maximum_span_label');
+            insertAfter(label2, document.getElementById('minimum_span_label'));
+
+            var au = document.querySelector('audio');
+            au.onloadedmetadata = function () {
+                var wholeAudioDuration = au.duration;
+                wholeAudioDuration = parseInt(wholeAudioDuration);
+                document.getElementById("minimum_span_label").innerText = "0:00";
+                document.getElementById("maximum_span_label").innerText = `${Math.floor(wholeAudioDuration / 60)}:${Math.floor(wholeAudioDuration % 60)}`;
+                var div = document.createElement('div');
+                div.setAttribute("id", 'price_range');
+                insertAfter(div, document.getElementById("maximum_span_label"));
+                document.getElementById('minimum_span_label').style.position = "relative";
+                document.getElementById('maximum_span_label').style.position = "absolute";
+                var button = document.createElement('button');
+                button.setAttribute("id", "submit");
+                button.innerHTML = "SUBMIT";
+                var min = 0;
+                var max = wholeAudioDuration;
+                $('#price_range').slider(
+                    {
+                        range: true,
+                        min: 0,
+                        max: wholeAudioDuration,
+                        values: [0, wholeAudioDuration],
+                        step: 1,
+                        change: function (event, ui) {
+                            min = ui.values[0];
+                            max = ui.values[1];
+                            document.getElementById('minimum_span_label').style.left = document.getElementsByClassName('ui-slider-handle ui-corner-all ui-state-default')[0].style.left;
+                            document.getElementById('maximum_span_label').style.left = document.getElementsByClassName('ui-slider-handle ui-corner-all ui-state-default')[1].style.left;
+                            document.getElementById('minimum_span_label').innerHTML = `${Math.floor(ui.values[0] / 60)}:${Math.floor(ui.values[0] % 60)}`;
+                            document.getElementById('maximum_span_label').innerHTML = `${Math.floor(ui.values[1] / 60)}:${Math.floor(ui.values[1] % 60)}`;
+                        }
+                    });
+                insertAfter(button, div);
+
+                fetch(audioSource).then(function (response) {
+                    if (response.ok) {
+                        console.log("fetch");
+                        return response.blob();
+                    }
+                    throw new Error('Network response was not ok.');
+                }).then(function (blob) {
+                    Blob = blob;
+                }).catch(function (error) {
+                    console.log('There has been a problem with your fetch operation: ', error);
+                });
+
+
+                document.getElementById('submit').addEventListener('click', function (e) {
+                    if( document.getElementById('audio')){
+                        document.getElementById('audio').remove();
+                        document.getElementById('audiolabel').remove();
+                    }
+                    var startValue = parseInt(min)
+                    var endValue = parseInt(max);
+                    startValue = parseInt(startValue);
+                    endValue = parseInt(endValue);
+                    console.log(startValue, endValue);
+                    if (startValue > endValue) {
+                        window.alert("Start value must be less than end value");
+                    }
+                    else if (startValue === endValue) {
+                        window.alert("both can't be in same time");
+                    }
+                    else {
+                        var wholeDuration = document.querySelector('audio').duration;
+                        wholeDuration = Math.floor(wholeDuration);
+                        console.log(startValue, endValue, wholeDuration, Blob.size, Math.floor((startValue * Blob.size) / wholeDuration), Math.floor((endValue * Blob.size) / wholeDuration));
+                        var finalAudio;
+                        if (startValue === 0) {
+                            startValue = 1;
+                            endValue += 1;
+                            console.log(startValue);
+                            finalAudio = Blob.slice(Math.floor((startValue * Blob.size) / wholeDuration), Math.floor((endValue * Blob.size) / wholeDuration), Blob.type);
+                        }
+                        else {
+                            if (startValue === 1) {
+                                startValue = 1;
+                                endValue += 1;
+                            }
+                            if (startValue > 1) {
+                                startValue -= 1;
+                                endValue += 1;
+                            }
+
+
+                            finalAudio = Blob.slice(Math.floor((startValue * Blob.size) / wholeDuration), Math.floor((endValue * Blob.size) / wholeDuration), Blob.type);
+                        }
+                        window.audio = new Audio();
+                        window.audio.setAttribute("id",'audio');
+                        window.audio.src = window.URL.createObjectURL(finalAudio);
+                        window.audio.controls = true;
+                        window.audio.style.display='flex';
+                       
+                        var audioLabel=document.createElement('label');
+                        audioLabel.setAttribute("id",'audiolabel');
+                        audioLabel.innerHTML = "new audio"
+                        document.body.append(audioLabel);
+                       
+                       
+                        document.body.append(window.audio);
+                    }
+                }
+                )
+            }
+
+        }
+        );
+    }
+    );  
+
+
+
+
+</script>
